@@ -6,6 +6,12 @@ import http
 # response = requests.get(url)
 # json_response = json.loads(response.text)
 
+#TO:DO find a way to download comments so that we can go through each of them 
+#figure out a way to automate the downloading process and then run this 
+#write code to save the text into a format that we want 
+# extract zst into txt 
+#Jenn: take CSV into txt 
+
 your_filename = "./data/RC_2008-01.txt"
 with open(your_filename, "rb") as f:
     data = f.read()
