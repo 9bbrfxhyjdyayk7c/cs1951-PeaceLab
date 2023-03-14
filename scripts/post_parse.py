@@ -41,7 +41,7 @@ sales = ["Agreement",
 "Detterent",
 "consignment",]
 weapon = [
-    "Missile",
+"Missile",
 "rocket",  
 "System",
 "Arms",

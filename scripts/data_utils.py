@@ -1,4 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import json
 import math
@@ -39,7 +38,8 @@ html_pairs  = [
                ("&lt;",  " < "),
               ]
 
-
+nlp = English()
+tokenizer = nlp.tokenizer
 
 # tokenizes and removes URLs (kept in separate list)
 def pre_word_url_tokenize(stp):

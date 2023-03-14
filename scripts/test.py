@@ -18,6 +18,8 @@ from time import sleep, time
 
 from data_utils import *
 
+
+
 sales = ["Agreement",
 "Deal",
 "Sale",
@@ -33,8 +35,9 @@ sales = ["Agreement",
 "Transfer",
 "Detterent",
 "consignment",]
+
 weapon = [
-    "Missile",
+"Missile",
 "rocket",  
 "System",
 "Arms",
@@ -46,7 +49,6 @@ weapon = [
 ]
 
 REDDIT_URL  = "https://files.pushshift.io/reddit/"
-
 name = "name"
 
 # collects URLs for monthly dumps, has to be robust to file type changes
@@ -119,19 +121,45 @@ def download_and_process(file_url, mode, st_time):
     # for name in subreddit_names:
     for line in lines[name]:
         reddit_dct  = json.loads(line)
-        if reddit_dct.get('num_comments', 1) > 0 and reddit_dct.get('score', 0) and reddit_dct.get('score', 0) >= 2 and (mode == 'submissions' or valid_comment(reddit_dct)):
+        if reddit_dct.get('num_comments', 1) > 0 and  reddit_dct.get('score', 0) and reddit_dct.get('score', 0) >= 2 and (mode == 'submissions' or valid_comment(reddit_dct)):
+            # if reddit_dct['title'] in sales or reddit_dct['title'] in weapon: 
+            #     print("hi")
             reddit_res  = {}
+            relevant = True 
             for k in key_list:
                 if k in ['title', 'selftext', 'body']:
-                    if reddit_dct[k].lower() in ['[removed]', '[deleted]']:
-                        reddit_dct[k]   = ''
-                    txt, url_list       = word_url_tokenize(reddit_dct[k])
-                    reddit_res[k]       = (' '.join(txt.split()), url_list)
-                else:
-                    reddit_res[k]       = reddit_dct[k]
-            processed_items[name] += [reddit_res]
+                        if reddit_dct[k].lower() in ['[removed]', '[deleted]']:
+                            reddit_dct[k]   = ''
+                        txt, url_list       = word_url_tokenize(reddit_dct[k])
+                        split_txt = txt.split()
+
+                        first = False
+                        second = False
+
+                        for s in sales: 
+                            if s in split_txt: 
+                                first = True 
+                                break 
+                            if not first: 
+                                continue 
+                        for w in weapon: 
+                            if w in split_txt: 
+                                second = True 
+                                break 
+                        if first and second:
+                            reddit_res[k]     = (' '.join(split_txt), url_list)
+                            relevant = True 
+            if relevant:                 
+                processed_items[name] += [reddit_res]
+            # else: 
+            #     del processed_items[name]
+            # print(processed_items[name])
+         
     print("Total found %d" % (len(processed_items)), time() - st_time)
     return processed_items
+
+
+
 
 
 def post_process(reddit_dct, name=''):
@@ -139,6 +167,7 @@ def post_process(reddit_dct, name=''):
     start_re    = re.compile('[\[]?[ ]?eli[5f][ ]?[\]]?[]?[:,]?', re.IGNORECASE)
     if name == 'explainlikeimfive':
         title, uls  = reddit_dct['title']
+        
         title       = start_re.sub('', title).strip()
         reddit_dct['title'] = [title, uls]
     # dedupe and filter comments
@@ -147,42 +176,41 @@ def post_process(reddit_dct, name=''):
     reddit_dct['comments']  = comments
     return reddit_dct
 
-def filter(fname):
-    # print(data)
+# def filter(fname):
+#     # print(data)
+#     with open(fname, "rb") as f:
+#         data = f.read()
+#         my_json = data.decode('utf8')
+#         my_json = my_json.split('\n') 
+#         posts = []
+#         for i in range(0,len(my_json)):
+#     # print(i)
+#             try:
+#                 post = json.loads(my_json[i])
+#                 posts.append(post)
+#             except:
+#                 print("Post " + str(i) + " failed to be added")
 
-    with open(fname, "rb") as f:
-        data = f.read()
-        my_json = data.decode('utf8')
-        my_json = my_json.split('\n') 
-        posts = []
-        for i in range(0,len(my_json)):
-    # print(i)
-            try:
-                post = json.loads(my_json[i])
-                posts.append(post)
-            except:
-                print("Post " + str(i) + " failed to be added")
+#     result = []
+#     for p in posts:
+#         first = False
+#         second = False
+#     for s in sales:
+#         if s in p['body']:
+#             first = True
+#             break
+#         if not first:
+#             continue
+#     for w in weapon:
+#         if w in p['body']:
+#             second = True
+#             break
+#     if first and second:
+#         result.append(p)
 
-    result = []
-    for p in posts:
-        first = False
-        second = False
-    for s in sales:
-        if s in p['body']:
-            first = True
-            break
-        if not first:
-            continue
-    for w in weapon:
-        if w in p['body']:
-            second = True
-            break
-    if first and second:
-        result.append(p)
-
-    for r in result:
-        print(r['body'])
-        print("----------------------------")
+#     for r in result:
+#         print(r['body'])
+#         print("----------------------------")
 
 
 def main():
@@ -217,10 +245,11 @@ def main():
     output_files    = dict([("name", "%s_qalist.json" % ("name",))])
     qa_dict         = dict([("name", {})])
     for name, fname in output_files.items():
+        print(name)
         if isfile(fname):
             print("loading already processed documents from", fname)
             f = open(fname)
-            filter(f)
+            # filter(f)
             qa_dict[name] = dict(json.load(f))
             f.close()
             print("loaded already processed documents")
@@ -244,23 +273,24 @@ def main():
                     print("retrying %s once" % (submissions_url))
                     processed_submissions   = download_and_process(submissions_url,
                                                                    'submissions',
-                                                                #    subreddit_names,
+                                                            
                                                                    st_time)
                 # for name in subreddit_names:
                 for dct in processed_submissions[name]:
                     qa_dict[name][dct['id']]  = dct
+             
             if not args.questions_only:
                 try:
                     processed_comments      = download_and_process(comments_url,
                                                                    'comments',
-                                                                #    subreddit_names,
+            
                                                                    st_time)
                 except FileNotFoundError as e:
                     sleep(60)
                     print("retrying %s once" % (comments_url))
                     processed_comments      = download_and_process(comments_url,
                                                                    'comments',
-                                                                #    subreddit_names,
+                                                             
                                                                    st_time)
                 # merge submissions and comments
                 # for name in subreddit_names:
